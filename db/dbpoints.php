@@ -32,11 +32,6 @@ header("Content-Type: application/json");
     $featuresCollection = ["type" => "FeatureCollection", "features" => $features];
     echo json_encode($featuresCollection);
 
-
-    function inserirponto(){
-        //WOrk
-    }
-
 ?>
 
 

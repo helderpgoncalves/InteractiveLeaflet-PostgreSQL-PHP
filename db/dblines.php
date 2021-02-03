@@ -30,9 +30,3 @@ header("Content-Type: application/json");
 
     $featuresCollection1 = ["type" => "FeatureCollection", "features" => $features];
     echo json_encode($featuresCollection1);
-
-    function inserirlinha(){
-        //WOrk
-    }
-
-?>

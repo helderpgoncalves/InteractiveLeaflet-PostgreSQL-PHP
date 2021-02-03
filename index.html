@@ -13,6 +13,7 @@
       integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ=="
       crossorigin=""
     />
+
     <script
       src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"
       integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log=="
@@ -42,18 +43,15 @@
     <!-- 2.5D OSM Buildings Classic: https://github.com/kekscom/osmbuildings -->
     <script src="https://cdn.osmbuildings.org/OSMBuildings-Leaflet.js"></script>
 
-    <!-- Load Font Awesome icons -->
-    <script src="https://use.fontawesome.com/a64989e3a8.js"></script>
-
     <!-- Grouped Layer Plugin: https://github.com/ismyrnow/leaflet-groupedlayercontrol  -->
-    <link rel="stylesheet" href="CSS/leaflet.groupedlayercontrol.min.css" />
+    <link rel="stylesheet" href="css/" />
     <script
       src="js/leaflet.groupedlayercontrol.min.js"
       type="text/javascript"
     ></script>
 
     <!-- Overview mini map Plugin: https://github.com/Norkart/Leaflet-MiniMap -->
-    <link rel="stylesheet" href="CSS/Control.MiniMap.css" />
+    <link rel="stylesheet" href="css/" />
     <script src="js/Control.MiniMap.min.js" type="text/javascript"></script>
 
     <!-- Leaflet Drawing Plugin: https://github.com/codeofsumit/leaflet.pm -->
@@ -66,14 +64,17 @@
     <!-- Leaflet WMS Plugin: https://github.com/heigeo/leaflet.wms -->
     <script src="js/leaflet.wms.js"></script>
 
-    <!-- Logo Credit Plugin: https://github.com/gregallensworth/L.Control.Credits -->
-    <link rel="stylesheet" href="CSS/leaflet-control-credits.css" />
-    <script type="text/javascript" src="JS/leaflet-control-credits.js"></script>
-
     <script
       src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"
       type="text/javascript"
     ></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.freedraw/2.0.1/leaflet-freedraw.web.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.4.2/leaflet.draw.js"></script>
 
     <style>
       body {
@@ -94,7 +95,8 @@
 
     <script>
       var map = L.map("map", {
-        center: [41.5315, -8.61896], // BARCELOS 
+        drawControl: true,
+        center: [41.5315, -8.61896], // BARCELOS
         zoom: 13,
       });
 
@@ -258,7 +260,7 @@
         "Layers Base": {
           "Area Ardida 2018": AreaArdida,
           CAOP: CAOP,
-          "Ecopistas": ecopistas,
+          Ecopistas: ecopistas,
           "Pontos Água": PontosAgua,
           "Rede Viária": RedeViaria,
           "Zonas de Caça": zonasCaca,
@@ -298,7 +300,7 @@
 
       //Display do Pontos
       $.ajax({
-        url: "db/dbconnect.php",
+        url: "db/dbpoints.php",
         success: function (response) {
           pontos = response;
           test = L.geoJSON(pontos).addTo(map);
@@ -332,44 +334,68 @@
         },
       });
 
-      //Opções da barra de tarefas
-      var options = {
-        position: "topright", //Posição
-        drawMarker: true, // adds button to draw markers
-        drawPolyline: true, // adds button to draw a polyline
-        drawRectangle: true, // adds button to draw a rectangle
-        drawPolygon: true, // adds button to draw a polygon
-        drawCircle: true, // adds button to draw a cricle
-        cutPolygon: true, // adds button to cut a hole in a polygon
-        editMode: true, // adds button to toggle edit mode for all layers
-        removalMode: true, // adds a button to remove layers
-      };
+      var editableLayers = new L.FeatureGroup();
+      map.addLayer(editableLayers);
 
-      //Adiciona Controlo no mapa
-      map.pm.addControls(options);
+      map.on("draw:created", function (e) {
+        var type = e.layerType,
+          layer = e.layer;
 
+        if (type === "marker") {
+          var shape = layer.toGeoJSON();
+          var shape_for_db = JSON.stringify(shape); // SERIALIZAR PARA ENVIAR PARA BD
+          $.ajax({
+            url: "db/addPontos.php",
+            data: shape_for_db,
+            cache: false,
+            contentType: false,
+            processData: false,
+            method: 'POST',
+            type: 'POST',
+            dataType: 'json',
+            success: function (res){
+                console.log("sucesso adicionar dados");
+            },
+            error: function(errorMessage) {
+                console.log(errorMessage);
+            }
+
+        });
+
+        // Do whatever else you need to. (save to db, add to map etc)
+        editableLayers.addLayer(layer);
+        console.log(editableLayers);
+      });
+
+      map.on("draw:edited", function () {
+        // Update db to save latest changes.
+      });
+
+      map.on("draw:deleted", function () {
+        // Update db to save latest changes.
+      });
 
       /*
 
-      Testes antigos 
-      
-            var popup = L.popup()
-              .setLatLng([41.522717, -8.34673])
-              .setContent("Olá.")
-              .openOn(map);
+            Testes antigos
 
-            //clicks
-            var popup = L.popup();
+                  var popup = L.popup()
+                    .setLatLng([41.522717, -8.34673])
+                    .setContent("Olá.")
+                    .openOn(map);
 
-            /*
-            function onMapClick(e) {
-              popup
-                .setLatLng(e.latlng)
-                .setContent("You clicked the map at " + e.latlng.toString())
-                .openOn(map);
-            }
-              map.on("click", onMapClick);
-            */
+                  //clicks
+                  var popup = L.popup();
+
+                  /*
+                  function onMapClick(e) {
+                    popup
+                      .setLatLng(e.latlng)
+                      .setContent("You clicked the map at " + e.latlng.toString())
+                      .openOn(map);
+                  }
+                    map.on("click", onMapClick);
+                  */
     </script>
   </body>
 </html>
