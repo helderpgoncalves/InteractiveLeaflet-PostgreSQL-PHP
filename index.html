@@ -344,27 +344,76 @@
         if (type === "marker") {
           var shape = layer.toGeoJSON();
           var shape_for_db = JSON.stringify(shape); // SERIALIZAR PARA ENVIAR PARA BD
+
+          layer.getLatLng();
+
+          console.log(shape_for_db);
+
           $.ajax({
-            url: "db/addPontos.php",
-            data: shape_for_db,
-            cache: false,
-            contentType: false,
-            processData: false,
-            method: 'POST',
-            type: 'POST',
-            dataType: 'json',
-            success: function (res){
-                console.log("sucesso adicionar dados");
+            url: "db/insert.php",
+            crossDomain: true,
+            data: {
+              latitude: shape.geometry.coordinates[0],
+              longitude: shape.geometry.coordinates[1],
+              tipo: type,
             },
-            error: function(errorMessage) {
-                console.log(errorMessage);
-            }
-
-        });
-
+            type: "POST",
+            success: function (res) {
+                alert("Marker Inserido!")
+              console.log("Sucesso adicionar pontos!");
+            },
+            error: function (errorMessage) {
+              console.log("ERRO");
+              console.log(errorMessage);
+            },
+          });
+        } else if (type === "polygon") {
+          var coordenadas = layer.getLatLngs();
+          var coordenadasSerializadas = JSON.stringify(coordenadas); // SERIALIZAR PARA ENVIAR PARA BD
+         // console.log(shape_for_db);
+         // console.log(shape);
+          $.ajax({
+            url: "db/insert.php",
+            crossDomain: true,
+            data: {
+              coordenadas: coordenadasSerializadas,
+              tipo: type,
+            },
+            type: "POST",
+            success: function (res) {
+                alert("Poligono Inserido!")
+              console.log("Sucesso adicionar dados");
+            },
+            error: function (errorMessage) {
+              console.log("ERRO");
+              console.log(errorMessage);
+            },
+          });
+        } else if (type === "polyline") {
+          var coordenadas = layer.getLatLngs();
+          var coordenadasSerializadas = JSON.stringify(coordenadas); // SERIALIZAR PARA ENVIAR PARA BD
+          //console.log(shape_for_db);
+          //console.log(shape);
+          $.ajax({
+            url: "db/insert.php",
+            crossDomain: true,
+            data: {
+                tipo: type,
+                coordenadas: coordenadasSerializadas,
+            },
+            type: "POST",
+            success: function (res) {
+                alert("Linha Inserido!")
+              console.log("Sucesso adicionar dados");
+            },
+            error: function (errorMessage) {
+              console.log("ERRO");
+              console.log(errorMessage);
+            },
+          });
+        }
         // Do whatever else you need to. (save to db, add to map etc)
         editableLayers.addLayer(layer);
-        console.log(editableLayers);
       });
 
       map.on("draw:edited", function () {
