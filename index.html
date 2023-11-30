@@ -96,8 +96,8 @@
     <script>
       var map = L.map("map", {
         drawControl: true,
-        center: [41.5315, -8.61896], // BARCELOS
-        zoom: 13,
+        center: [-2.5489, 118.0149], // Center of Indonesia
+        zoom: 5,
       });
 
       var defaultBase = L.tileLayer.provider("OpenStreetMap").addTo(map);
@@ -205,8 +205,7 @@
       //ESRI ArcGIS layers from Hawaii GIS Program; polygon feature layer example
       //Using a relative url to call layer instead of http
       var AgBaseline = L.esri.featureLayer({
-        url:
-          "//geodata.hawaii.gov/arcgis/rest/services/LandUseLandCover/MapServer/4",
+        url: "//geodata.hawaii.gov/arcgis/rest/services/LandUseLandCover/MapServer/4",
         style: function (feature) {
           return {
             fillOpacity: 0.5,
@@ -334,12 +333,38 @@
         },
       });
 
+      //Display do Rectangle
+      $.ajax({
+        url: "db/dbrectangles.php",
+        success: function (response) {
+          rectangle = response;
+          test = L.geoJSON(rectangle).addTo(map);
+        },
+        error: function (xhr, status, error) {
+          console.log(error);
+        },
+      });
+
+      //Display do Circle
+      $.ajax({
+        url: "db/dbcircles.php",
+        success: function (response) {
+          circle = response;
+          test = L.geoJSON(circle).addTo(map);
+        },
+        error: function (xhr, status, error) {
+          console.log(error);
+        },
+      });
+
       var editableLayers = new L.FeatureGroup();
       map.addLayer(editableLayers);
 
       map.on("draw:created", function (e) {
         var type = e.layerType,
           layer = e.layer;
+
+        console.log(type);
 
         if (type === "marker") {
           var shape = layer.toGeoJSON();
@@ -359,7 +384,7 @@
             },
             type: "POST",
             success: function (res) {
-                alert("Marker Inserido!")
+              alert("Marker Inserido!");
               console.log("Sucesso adicionar pontos!");
             },
             error: function (errorMessage) {
@@ -370,8 +395,8 @@
         } else if (type === "polygon") {
           var coordenadas = layer.getLatLngs();
           var coordenadasSerializadas = JSON.stringify(coordenadas); // SERIALIZAR PARA ENVIAR PARA BD
-         // console.log(shape_for_db);
-         // console.log(shape);
+          // console.log(shape_for_db);
+          // console.log(shape);
           $.ajax({
             url: "db/insert.php",
             crossDomain: true,
@@ -381,7 +406,7 @@
             },
             type: "POST",
             success: function (res) {
-                alert("Poligono Inserido!")
+              alert("Poligono Inserido!");
               console.log("Sucesso adicionar dados");
             },
             error: function (errorMessage) {
@@ -398,13 +423,63 @@
             url: "db/insert.php",
             crossDomain: true,
             data: {
-                tipo: type,
-                coordenadas: coordenadasSerializadas,
+              tipo: type,
+              coordenadas: coordenadasSerializadas,
             },
             type: "POST",
             success: function (res) {
-                alert("Linha Inserido!")
+              alert("Linha Inserido!");
               console.log("Sucesso adicionar dados");
+            },
+            error: function (errorMessage) {
+              console.log("ERRO");
+              console.log(errorMessage);
+            },
+          });
+        } else if (type === "rectangle") {
+          // Code for handling rectangles
+          var bounds = layer.getBounds();
+          var northEast = bounds.getNorthEast();
+          var southWest = bounds.getSouthWest();
+
+          $.ajax({
+            url: "db/insert.php",
+            crossDomain: true,
+            data: {
+              northEastLat: northEast.lat,
+              northEastLng: northEast.lng,
+              southWestLat: southWest.lat,
+              southWestLng: southWest.lng,
+              tipo: type,
+            },
+            type: "POST",
+            success: function (res) {
+              alert("Rectangle Inserido!");
+              console.log("Sucesso adicionar retângulo!");
+            },
+            error: function (errorMessage) {
+              console.log("ERRO");
+              console.log(errorMessage);
+            },
+          });
+        } else if (type === "circle") {
+          // Code for handling circles
+          var latLng = layer.getLatLng();
+          var radius = layer.getRadius();
+
+          $.ajax({
+            url: "db/insert.php",
+            crossDomain: true,
+            data: {
+              centerLat: latLng.lat,
+              centerLng: latLng.lng,
+              radius: radius,
+              tipo: type,
+            },
+            type: "POST",
+            success: function (res) {
+              alert("Circle Inserido!");
+              console.log("Sucesso adicionar círculo!");
             },
             error: function (errorMessage) {
               console.log("ERRO");

@@ -1,53 +1,41 @@
 <?php
 header("Content-Type: application/json");
 
-$user = "postgres";
-$pwd = "";
-$host = "localhost";
-$database = "istp";
-$port = '5432';
-
+//move connection to one file
+require_once './connection/connect.php';
 $tipo = $_POST['tipo'];
 
-$dsn = "pgsql:host=$host;dbname=$database;port=$port";
+if ($tipo == 'marker') { // SE FOR UM PONTO
+    $result = $pdo->query("SELECT *, ST_AsGeoJSON(point,5) as geojson FROM occurrences_point");
 
-$opt = [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES => false
-];
+    $features = [];
+    foreach ($result as $row) {
+        unset($row['geometry']);
+        $geometry = $row['geojson'] = json_decode($row['geojson']);
+        unset($row['geojson']);
+        $feature = ["type" => "Feature", "geometry" => $geometry, "properties" => $row];
+        array_push($features, $feature);
+    }
 
-$pdo = new PDO($dsn, 'postgres', 'admin', $opt);
+    $featuresCollection = ["type" => "FeatureCollection", "features" => $features];
 
-if($tipo == 'maker'){ // SE FOR UM PONTO
-$features = [];
-foreach ($result as $row) {
-    unset($row['geometry']);
-    $geometry = $row['geojson'] = json_decode($row['geojson']);
-    unset($row['geojson']);
-    $feature = ["type" => "Feature", "geometry" => $geometry, "properties" => $row];
-    array_push($features, $feature);
-}
+    $idnovo = sizeof($features);
+    echo "TAMANHO " . $idnovo . "<br>";
 
-$featuresCollection = ["type" => "FeatureCollection", "features" => $features];
+    $datetime = date("Y-m-d h:i:sa");
+    echo "Today is " . $datetime . "<br>";
 
-$idnovo = sizeof($features);
-echo "TAMANHO " . $idnovo . "<br>";
+    //$nome = $_POST['nomeMarker'];
+    $lat = isset($_POST['latitude']) ? $_POST['latitude'] : null;
+    $long = isset($_POST['longitude']) ? $_POST['longitude'] : null;
 
-$datetime = date("Y-m-d h:i:sa");
-echo "Today is " . $datetime . "<br>";
+    echo "LAT " . $lat . "<br>";
+    echo "LONG " . $long . "<br>";
 
-//$nome = $_POST['nomeMarker'];
-$lat = isset($_POST['latitude']) ? $_POST['latitude'] : null;
-$long = isset($_POST['longitude']) ? $_POST['longitude'] : null;
+    $result = $pdo->query("INSERT INTO occurrences_point(id, name, type, date, point, image) VALUES 
+    ($idnovo + 1,'NovoMarker',1,'$datetime',ST_SetSRID(ST_MakePoint($lat, $long),4326),54654)");
 
-echo "LAT " . $lat . "<br>";
-echo "LONG " . $long . "<br>";
-
-$result = $pdo->query("INSERT INTO occurrences_point(id, name, type, date, point, image) VALUES 
-    ($idnovo + 1,'NovoMarker',1,'$datetime',ST_SetSRID(ST_MakePoint($long, $lat),4326),54654)");
-    
-} else if ($tipo == "polyline"){
+} else if ($tipo == "polyline") {
     $result = $pdo->query("SELECT *, ST_AsGeoJSON(line,5) as geojson FROM occurrences_line");
 
     $features = [];
@@ -139,5 +127,47 @@ $result = $pdo->query("INSERT INTO occurrences_point(id, name, type, date, point
 
     $result = $pdo->query("INSERT INTO occurrences_polygon(id, name, type, date, geometry, image) VALUES 
     ($idnovo + 1,'NovoLine',1,'$datetime',ST_GeomFromText('POLYGON (($str $strlastpoint))',4326), 54654)");
+} else if ($tipo == "rectangle") {
+
+    $result = $pdo->query("SELECT *, ST_AsGeoJSON(geometry,5) as geojson FROM occurrences_rectangle");
+
+    $features = [];
+    foreach ($result as $row) {
+        unset($row['geometry']);
+        $geometry = $row['geojson'] = json_decode($row['geojson']);
+        unset($row['geojson']);
+        $feature = ["type" => "Feature", "geometry" => $geometry, "properties" => $row];
+        array_push($features, $feature);
+    }
+
+    $featuresCollection = ["type" => "FeatureCollection", "features" => $features];
+
+    $idnovo = sizeof($features);
+    echo "TAMANHO " . $idnovo;
+
+    $datetime = date("Y-m-d h:i:sa");
+    echo "Today is " . $datetime;
+
+    //$nome = $_POST['nomeMarker'];
+    $northEastLat = isset($_POST['northEastLat']) ? $_POST['northEastLat'] : null;
+    $northEastLng = isset($_POST['northEastLng']) ? $_POST['northEastLng'] : null;
+    $southWestLat = isset($_POST['southWestLat']) ? $_POST['southWestLat'] : null;
+    $southWestLng = isset($_POST['southWestLng']) ? $_POST['southWestLng'] : null;
+
+    $result = $pdo->query("INSERT INTO occurrences_rectangle (name, type, date, geometry, image) VALUES 
+    ('NovoRectangle', 1, '$datetime', ST_MakeEnvelope($southWestLng, $southWestLat, $northEastLng, $northEastLat, 4326), 54654)");
+} else if ($tipo == "circle") {
+    $centerLat = isset($_POST['centerLat']) ? $_POST['centerLat'] : null;
+    $centerLng = isset($_POST['centerLng']) ? $_POST['centerLng'] : null;
+    $radius = isset($_POST['radius']) ? $_POST['radius'] : null;
+
+    $datetime = date("Y-m-d h:i:sa");
+
+    $result = $pdo->query("INSERT INTO occurrences_circle (name, type, date, geometry, image) VALUES 
+    ('NovoCircle', 1, '$datetime', ST_Buffer(ST_MakePoint($centerLng, $centerLat)::geography, $radius)::geometry, 54654)");
+
+    echo "Circle Inserido!";
 }
+
+
 ?>
