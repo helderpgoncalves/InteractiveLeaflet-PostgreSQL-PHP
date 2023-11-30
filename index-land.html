@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      #map {
+        height: 1080px;
+      }
+    </style>
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script>
+      var map = L.map("map").setView([-6.2088, 106.8456], 5);
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      var marker = L.marker([-6.2088, 106.8456]).addTo(map);
+
+      var circle = L.circle([-6.2088, 106.8456], {
+        color: "red",
+        fillColor: "#f03",
+        fillOpacity: 0.5,
+        radius: 500,
+      }).addTo(map);
+
+      var polygon = L.polygon([
+        [-6.98557181, 106.33546448],
+        [-6.98556238, 106.33560022],
+        [-6.98557964, 106.3358899],
+        [-6.98604988, 106.33590029],
+        [-6.98640255, 106.33591034],
+        [-6.98642133, 106.33578368],
+        [-6.98644903, 106.33546697],
+        [-6.98600587, 106.33547476],
+        [-6.98584306, 106.33548335],
+        [-6.98557181, 106.33546448],
+      ]).addTo(map);
+
+      // var imageUrl =
+      //     "https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/SpongeBob_SquarePants_main_characters.png/370px-SpongeBob_SquarePants_main_characters.png",
+      //   imageBounds = [
+      //     [-6.98557181, 106.33546448],
+      //     [-6.98556238, 106.33560022],
+      //     [-6.98557964, 106.3358899],
+      //     [-6.98604988, 106.33590029],
+      //     [-6.98640255, 106.33591034],
+      //     [-6.98642133, 106.33578368],
+      //     [-6.98644903, 106.33546697],
+      //     [-6.98600587, 106.33547476],
+      //     [-6.98584306, 106.33548335],
+      //     [-6.98557181, 106.33546448],
+      //   ];
+      // L.imageOverlay(imageUrl, imageBounds).addTo(map);
+
+      var states = [
+        {
+          type: "Feature",
+          properties: { party: "Republican" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [-104.05, 48.99],
+                [-97.22, 48.98],
+                [-96.58, 45.94],
+                [-104.03, 45.94],
+                [-104.05, 48.99],
+              ],
+            ],
+          },
+        },
+        {
+          type: "Feature",
+          properties: { party: "Democrat" },
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [-109.05, 41.0],
+                [-102.06, 40.99],
+                [-102.03, 36.99],
+                [-109.04, 36.99],
+                [-109.05, 41.0],
+              ],
+            ],
+          },
+        },
+      ];
+
+      L.geoJSON(states, {
+        style: function (feature) {
+          switch (feature.properties.party) {
+            case "Republican":
+              return { color: "#ff0000" };
+            case "Democrat":
+              return { color: "#0000ff" };
+          }
+        },
+      }).addTo(map);
+
+
+      map.locate({setView: true, maxZoom: 16});
+      
+      function onLocationFound(e) {
+        var radius = e.accuracy;
+
+        L.marker(e.latlng)
+          .addTo(map)
+          .bindPopup("You are within " + radius + " meters from this point")
+          .openPopup();
+
+        L.circle(e.latlng, radius).addTo(map);
+      }
+
+      map.on("locationfound", onLocationFound);
+
+      //       |("type"."polygon""coordinates":[[(106.335464481,-6.98557181)/106.335600221,-6.985562382)./106.335889905.-6.985579649),
+      // (106.335900291,-6.986049885),[106.335910343,-6.986402555),(106.33578368,-6.986421001),(106.33546697,-6.98644903],
+      // (106.335474764-6.986005873).(106.335483353,-6.985843064).[106.335464481,-6.98557181))]7
+
+      marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
+      circle.bindPopup("I am a circle.");
+      polygon.bindPopup("I am sawarna.");
+
+      var popup = L.popup()
+        .setLatLng([-6.2088, 106.8456])
+        .setContent("I am a standalone popup.")
+        .openOn(map);
+
+      var popup = L.popup([-6.2088, 106.8456], {
+        content: "<p>Hello world!<br />This is a nice popup.</p>",
+      }).openOn(map);
+
+      function onMapClick(e) {
+        popup
+          .setLatLng(e.latlng)
+          .setContent("You clicked the map at " + e.latlng.toString())
+          .openOn(map);
+      }
+
+      map.on("click", onMapClick);
+    </script>
+  </body>
+</html>
